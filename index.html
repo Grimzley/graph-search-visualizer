@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <title>Pathfinding Visualizer</title>
+    <link rel="stylesheet" href="https://pyscript.net/releases/2024.2.1/core.css">
+    <link rel="stylesheet" href="styles.css">
+    <script type="module" src="https://pyscript.net/releases/2024.2.1/core.js"></script>
+</head>
+<body>
+  <h1>Pathfinding Visualizer</h1>
+  <div>
+    <canvas id="grid" width="600" height="600" style="border:1px solid black;"></canvas>
+  </div>
+  <div>
+    <button py-click="run_pathfinding()">Run Pathfinding</button>
+  </div>
+
+  <py-script>
+        from js import document
+
+        canvas = document.getElementById("grid")
+        ctx = canvas.getContext("2d")
+
+        ROWS, COLS = 20, 20
+        CELL_SIZE = 30
+
+        # draw a grid
+        def draw_grid():
+            for i in range(ROWS):
+                for j in range(COLS):
+                    ctx.strokeRect(j*CELL_SIZE, i*CELL_SIZE, CELL_SIZE, CELL_SIZE)
+
+        def run_pathfinding():
+            draw_grid()
+            ctx.fillStyle = "lightblue"
+            ctx.fillRect(0, 0, CELL_SIZE, CELL_SIZE)
+            ctx.fillRect(CELL_SIZE, CELL_SIZE, CELL_SIZE, CELL_SIZE)
+
+        draw_grid()
+  </py-script>
+
+</body>
+</html>

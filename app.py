@@ -19,7 +19,7 @@ COLORS = {
     2: "#27ae60",   # Start
     3: "#c0392b",   # End
     4: "#2980b9",   # Observed
-    5: "#1abc9c",   # Queued
+    5: "#5dade2",   # Queued
     6: "#f39c12",   # Path
     7: "rgba(155, 89, 182, 0.5)"    # Hover
 }
@@ -39,30 +39,43 @@ class Node:
     def getPos(self):
         return self.y, self.x
     
-    def getNeighbors(self):  
+    def getNeighbors(self):
         up = Node(self.y - 1, self.x, self)
         right = Node(self.y, self.x + 1, self)
         down = Node(self.y + 1, self.x, self)
         left = Node(self.y, self.x - 1, self)
-
-        ur = Node(self.y - 1, self.x + 1, self)
-        dr = Node(self.y + 1, self.x + 1, self)
-        dl = Node(self.y + 1, self.x - 1, self)
-        ul = Node(self.y - 1, self.x - 1, self)
-
-        return up, right, down, left, ur, dr, dl, ul
+        if DIAGONAL:
+            ur = Node(self.y - 1, self.x + 1, self)
+            dr = Node(self.y + 1, self.x + 1, self)
+            dl = Node(self.y + 1, self.x - 1, self)
+            ul = Node(self.y - 1, self.x - 1, self)
+            return up, right, down, left, ur, dr, dl, ul
+        return up, right, down, left
     
     def fCost(self):
         return self.gCost + self.hCost
 
 def main():
-    global START, END, open, closed
-    global mouse_down, draw_mode, hover
+    global START, END, open, closed, DIAGONAL, ALGORITHM, searching
+    global mouse_pos, mouse_over_canvas, mouse_down, draw_mode, hover
+
+    ALGORITHMS = {
+        "A*": AStar,
+        "Greedy": Greedy,
+        "BFS": BFS,
+        "DFS": DFS,
+    }
 
     START = None
     END = None
     open = []
     closed = []
+    DIAGONAL = True
+    ALGORITHM = ALGORITHMS["A*"]
+    searching = False
+
+    mouse_pos = {"x": 0, "y": 0}
+    mouse_over_canvas = False
     mouse_down = False
     hover = None
 
@@ -75,24 +88,86 @@ def main():
     canvas.addEventListener("mousedown", create_proxy(handleDown))
     document.addEventListener("mouseup", create_proxy(handleUp))
     canvas.addEventListener("mousemove", create_proxy(handleMove))
+    canvas.addEventListener("mouseenter", create_proxy(handleMouseEnter))
+    canvas.addEventListener("mouseleave", create_proxy(handleMouseLeave))
+    document.addEventListener("keydown", create_proxy(handleKey))
     run.addEventListener("click", create_proxy(runPathfinding))
-
+    
 def disable_context_menu(event):
     event.preventDefault()
 
 async def runPathfinding(event=None):
+    global ALGORITHM, searching
     run.disabled = True
-    found = False
     start()
-    while not found:
-        found = AStar()
+    while searching:
+        found = ALGORITHM()
         if found == True:
             reconstructPath()
+            searching = False
         elif found == False:
-            break
+            searching = False
         draw_grid()
         await asyncio.sleep(0.01)
     run.disabled = False
+
+##############################
+#         User Input         #
+##############################
+
+def handleDown(event):
+    global mouse_down, draw_mode
+    mouse_down = True
+    draw_mode = "wall" if event.button == 0 else "erase"
+    updateCell(mouse_pos["x"], mouse_pos["y"])
+
+def handleUp(event):
+    global mouse_down
+    mouse_down = False
+
+def handleMove(event):
+    global hover
+    x, y = getCoordsFromPosition(event.offsetX, event.offsetY)
+    mouse_pos["x"] = x
+    mouse_pos["y"] = y
+    if 0 <= x < COLS and 0 <= y < ROWS:
+        hover = (x, y)
+    else:
+        hover = None
+    if mouse_down:
+        updateCell(x, y)
+    else:
+        draw_grid()
+
+def handleMouseEnter(event):
+    global mouse_over_canvas
+    mouse_over_canvas = True
+
+def handleMouseLeave(event):
+    global mouse_over_canvas
+    mouse_over_canvas = False
+
+async def handleKey(event):
+    if not searching:
+        key = event.key
+        if mouse_over_canvas:
+            x = mouse_pos["x"]
+            y = mouse_pos["y"]
+            if key.lower() == "s":
+                global START
+                START = setStart(x, y)
+            elif key.lower() == "e":
+                global END
+                END = setEnd(x, y)
+        if key.lower() == "d":
+            toggleDiagonal()
+        elif key == " ":
+            await runPathfinding()
+        elif key.lower() == "r":
+            reset()
+        elif key.lower() == "c":
+            clear()
+        draw_grid()
 
 ##############################
 #      Helper Functions      #
@@ -121,30 +196,7 @@ def setEnd(x, y):
     GRID[y][x] = 3
     return Node(y, x, None)
 
-def handleDown(event):
-    global mouse_down, draw_mode
-    mouse_down = True
-    draw_mode = "wall" if event.button == 0 else "erase"
-    updateCell(event)
-
-def handleUp(event):
-    global mouse_down
-    mouse_down = False
-
-def handleMove(event):
-    global hover
-    x, y = getCoordsFromPosition(event.offsetX, event.offsetY)
-    if 0 <= x < COLS and 0 <= y < ROWS:
-        hover = (x, y)
-    else:
-        hover = None
-    if mouse_down:
-        updateCell(event)
-    else:
-        draw_grid()
-
-def updateCell(event):
-    x, y = getCoordsFromPosition(event.offsetX, event.offsetY)
+def updateCell(x, y):
     if 0 <= x < COLS and 0 <= y < ROWS:
         GRID[y][x] = 1 if draw_mode == "wall" else 0
         draw_grid()
@@ -152,7 +204,13 @@ def updateCell(event):
 def getCoordsFromPosition(xPos, yPos):
     return xPos // CELL_SIZE, yPos // CELL_SIZE
 
+def toggleDiagonal():
+    global DIAGONAL
+    if not searching:
+        DIAGONAL = not DIAGONAL
+
 def start():
+    global searching
     open.clear()
     open.append(START)
     closed.clear()
@@ -162,6 +220,28 @@ def start():
                 GRID[y][x] = 0
     GRID[START.y][START.x] = 2
     GRID[END.y][END.x] = 3 
+    searching = True
+
+def reset():
+    global searching
+    open.clear()
+    closed.clear()
+    for x in range(0, COLS):
+        for y in range(0, ROWS):
+            if GRID[y][x] in [4, 5, 6]:
+                GRID[y][x] = 0
+    GRID[START.y][START.x] = 2
+    GRID[END.y][END.x] = 3
+    searching = False
+
+def clear():
+    global searching
+    for x in range(0, COLS):
+        for y in range(0, ROWS):
+            GRID[y][x] = 0
+    GRID[START.y][START.x] = 2
+    GRID[END.y][END.x] = 3
+    searching = False
 
 def inGrid(x, y):
     return (x >= 0 and x < COLS) and (y >= 0 and y < ROWS)
@@ -190,6 +270,50 @@ def reconstructPath():
 ##############################
 #         Algorithms         #
 ##############################
+
+def DFS():
+    if not open:
+        return False
+    curr = open.pop()
+    closed.append(curr)
+    GRID[curr.y][curr.x] = 4
+    if curr == END:
+        return True
+    neighbors = curr.getNeighbors()
+    for neighbor in neighbors:
+        if isPath(neighbor) and neighbor not in closed and neighbor not in open:
+            open.append(neighbor)
+            GRID[neighbor.y][neighbor.x] = 5
+
+def BFS():
+    if not open:
+        return False
+    curr = open.pop(0)
+    closed.append(curr)
+    GRID[curr.y][curr.x] = 4
+    if curr == END:
+        return True
+    neighbors = curr.getNeighbors()
+    for neighbor in neighbors:
+        if isPath(neighbor) and neighbor not in closed and neighbor not in open:
+            open.append(neighbor)
+            GRID[neighbor.y][neighbor.x] = 5
+
+def Greedy():
+    if not open:
+        return False
+    open.sort(key = lambda node: node.hCost)
+    curr = open.pop(0)
+    closed.append(curr)
+    GRID[curr.y][curr.x] = 4
+    if curr == END:
+        return True
+    neighbors = curr.getNeighbors()
+    for neighbor in neighbors:
+        if isPath(neighbor) and neighbor not in closed and neighbor not in open:
+            neighbor.hCost = HCost(neighbor)
+            open.append(neighbor)
+            GRID[neighbor.y][neighbor.x] = 5
 
 def AStar():
     if not open:

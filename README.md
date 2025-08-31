@@ -2,9 +2,9 @@
 
 Developed an interactive web-based pathfinding visualizer using PyScript, enabling real-time exploration of graph traversal algorithms\
 Enhanced usability with a responsive Bootstrap interface, including dropdowns, controls, and visual indicators to improve clarity\
-Implemented dynamic user interaction features including click-and-drag wall placement, movable start/end points, and keyboard shortcuts\
+Implemented dynamic user interaction features including click-and-drag wall placement, movable start/end points, and keyboard shortcuts
 
-###### Program Keybinds
+###### Keyboard Shortcuts and Controls
 
 Left Clicking converts the hovered cell into a wall\
 Right Clicking converts the hovered cell into a path\

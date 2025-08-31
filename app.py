@@ -4,7 +4,11 @@ import asyncio
 
 canvas = document.getElementById("grid")
 ctx = canvas.getContext("2d")
-run = document.getElementById("run")
+runBtn = document.getElementById("run")
+resetBtn = document.getElementById("reset")
+clearBtn = document.getElementById("clear")
+dropdown = document.getElementById("dropdownMenuButton")
+toggleBtn = document.getElementById("toggleDiagonal")
 
 GRID_WIDTH = 900
 GRID_HEIGHT = 600
@@ -36,9 +40,6 @@ class Node:
     def __eq__(self, node):
         return isinstance(node, Node) and self.y == node.y and self.x == node.x
     
-    def getPos(self):
-        return self.y, self.x
-    
     def getNeighbors(self):
         up = Node(self.y - 1, self.x, self)
         right = Node(self.y, self.x + 1, self)
@@ -59,19 +60,12 @@ def main():
     global START, END, open, closed, DIAGONAL, ALGORITHM, searching
     global mouse_pos, mouse_over_canvas, mouse_down, draw_mode, hover
 
-    ALGORITHMS = {
-        "A*": AStar,
-        "Greedy": Greedy,
-        "BFS": BFS,
-        "DFS": DFS,
-    }
-
     START = None
     END = None
     open = []
     closed = []
     DIAGONAL = True
-    ALGORITHM = ALGORITHMS["A*"]
+    set_algorithm(None, "astar", "A*")
     searching = False
 
     mouse_pos = {"x": 0, "y": 0}
@@ -91,14 +85,34 @@ def main():
     canvas.addEventListener("mouseenter", create_proxy(handleMouseEnter))
     canvas.addEventListener("mouseleave", create_proxy(handleMouseLeave))
     document.addEventListener("keydown", create_proxy(handleKey))
-    run.addEventListener("click", create_proxy(runPathfinding))
+    runBtn.addEventListener("click", create_proxy(runPathfinding))
+    resetBtn.addEventListener("click", create_proxy(reset))
+    clearBtn.addEventListener("click", create_proxy(clear))
+    toggleBtn.addEventListener("click", create_proxy(toggleDiagonal))
+
+    document.getElementById("astar").addEventListener(
+        "click", create_proxy(lambda e: set_algorithm(e, "astar", "A*"))
+    )
+    document.getElementById("greedy").addEventListener(
+        "click", create_proxy(lambda e: set_algorithm(e, "greedy", "Greedy BFS"))
+    )
+    document.getElementById("bfs").addEventListener(
+        "click", create_proxy(lambda e: set_algorithm(e, "bfs", "BFS"))
+    )
+    document.getElementById("dfs").addEventListener(
+        "click", create_proxy(lambda e: set_algorithm(e, "dfs", "DFS"))
+    )
     
 def disable_context_menu(event):
     event.preventDefault()
 
 async def runPathfinding(event=None):
     global ALGORITHM, searching
-    run.disabled = True
+    runBtn.disabled = True
+    resetBtn.disabled = True
+    clearBtn.disabled = True
+    dropdown.disabled = True
+    toggleBtn.disabled = True
     start()
     while searching:
         found = ALGORITHM()
@@ -109,7 +123,11 @@ async def runPathfinding(event=None):
             searching = False
         draw_grid()
         await asyncio.sleep(0.01)
-    run.disabled = False
+    runBtn.disabled = False
+    resetBtn.disabled = False
+    clearBtn.disabled = False
+    dropdown.disabled = False
+    toggleBtn.disabled = False
 
 ##############################
 #         User Input         #
@@ -136,8 +154,7 @@ def handleMove(event):
         hover = None
     if mouse_down:
         updateCell(x, y)
-    else:
-        draw_grid()
+    draw_grid()
 
 def handleMouseEnter(event):
     global mouse_over_canvas
@@ -160,6 +177,7 @@ async def handleKey(event):
                 global END
                 END = setEnd(x, y)
         if key.lower() == "d":
+            toggleBtn.checked = not toggleBtn.checked
             toggleDiagonal()
         elif key == " ":
             await runPathfinding()
@@ -196,15 +214,25 @@ def setEnd(x, y):
     GRID[y][x] = 3
     return Node(y, x, None)
 
+def set_algorithm(event, algo, label):
+    global ALGORITHM
+    ALGORITHMS = {
+        "astar": AStar,
+        "greedy": Greedy,
+        "bfs": BFS,
+        "dfs": DFS,
+    }
+    ALGORITHM = ALGORITHMS[algo] 
+    document.getElementById("selectedAlgoText").innerText = label
+
 def updateCell(x, y):
     if 0 <= x < COLS and 0 <= y < ROWS:
         GRID[y][x] = 1 if draw_mode == "wall" else 0
-        draw_grid()
 
 def getCoordsFromPosition(xPos, yPos):
     return xPos // CELL_SIZE, yPos // CELL_SIZE
 
-def toggleDiagonal():
+def toggleDiagonal(event=None):
     global DIAGONAL
     if not searching:
         DIAGONAL = not DIAGONAL
@@ -222,7 +250,7 @@ def start():
     GRID[END.y][END.x] = 3 
     searching = True
 
-def reset():
+def reset(event=None):
     global searching
     open.clear()
     closed.clear()
@@ -233,8 +261,9 @@ def reset():
     GRID[START.y][START.x] = 2
     GRID[END.y][END.x] = 3
     searching = False
+    draw_grid()
 
-def clear():
+def clear(event=None):
     global searching
     for x in range(0, COLS):
         for y in range(0, ROWS):
@@ -242,6 +271,7 @@ def clear():
     GRID[START.y][START.x] = 2
     GRID[END.y][END.x] = 3
     searching = False
+    draw_grid()
 
 def inGrid(x, y):
     return (x >= 0 and x < COLS) and (y >= 0 and y < ROWS)
@@ -252,7 +282,10 @@ def isPath(node):
 def HCost(node):
     dy = abs(END.y - node.y)
     dx = abs(END.x - node.x)
-    return max(dy, dx)
+    if DIAGONAL:
+        return max(dy, dx)
+    else:
+        return dy + dx
 
 def reconstructPath():
     curr = closed.pop()

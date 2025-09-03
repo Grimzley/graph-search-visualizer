@@ -10,31 +10,22 @@
 </head>
 <body>
   <nav class="navbar bg-dark navbar-dark">
-    <div class="container-lg justify-content-between align-items-center">
-
+    <div class="container-lg">
       <div class="navbar-brand">Graph Search Visualizer</div>
-
-      <div class="d-flex align-items-center">
-        <div class="dropdown me-3">
-          <button 
-            class="btn btn-secondary w-100 dropdown-toggle" 
-            type="button" 
-            id="dropdownMenuButton" 
-            data-bs-toggle="dropdown" 
-            aria-expanded="false">
-            Select Algorithm
+      <div class="navbar-nav">
+        <div>
+          <button
+            class="btn btn-secondary"
+            data-bs-toggle="modal"
+            data-bs-target="#how-modal">
+            How to Use
           </button>
-          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton">
-            <li><a href="#" class="dropdown-item" id="astar">A*</a></li>
-            <li><a href="#" class="dropdown-item" id="greedy">Greedy BFS</a></li>
-            <li><a href="#" class="dropdown-item" id="bfs">BFS</a></li>
-            <li><a href="#" class="dropdown-item" id="dfs">DFS</a></li>
-          </ul>
-        </div>
-
-        <div class="form-check form-switch">
-           <input id="toggleDiagonal" class="form-check-input" type="checkbox" checked>
-           <label for="toggleDiagonal" class="text-light">Diagonal Movement (D)</label>
+          <button
+            class="btn btn-secondary"
+            data-bs-toggle="modal"
+            data-bs-target="#about-modal">
+            More Info
+          </button>
         </div>
       </div>
     </div>
@@ -43,21 +34,40 @@
   <section class="m-5">
     <div class="container-lg">
       <div class="row justify-content-center text-center">
-          <div class="col">
-            
-          </div>
-      </div>
-      <div class="row justify-content-center text-center">
         <div class="col">
           <p class="display-6">Selected Algorithm: <strong id="selectedAlgoText">A*</strong></p>
         </div>
       </div>
-      <div class="row justify-content-center text-center">
-        <div class="col">
+      <div class="row justify-content-center">
+        <div class="col-md-4 col-lg-3 text-center mb-3">
           <div class="btn-group">
-            <button id="run" class="btn btn-primary">Run (Space)</button>
-            <button id="reset" class="btn btn-primary">Reset (R)</button>
-            <button id="clear" class="btn btn-primary">Clear (C)</button>
+            <button id="run" class="btn btn-primary">Run</button>
+            <button id="reset" class="btn btn-warning">Reset</button>
+            <button id="clear" class="btn btn-danger">Clear</button>
+          </div>
+        </div>
+        <div class="col-md-4 col-lg-3 mb-3">
+          <div class="dropdown">
+            <button 
+              class="btn btn-secondary w-100 dropdown-toggle" 
+              type="button" 
+              id="dropdownMenuButton" 
+              data-bs-toggle="dropdown" 
+              aria-expanded="false">
+              Select Algorithm
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="dropdownMenuButton">
+              <li><button class="dropdown-item" id="astar">A*</button></li>
+              <li><button class="dropdown-item" id="greedy">Greedy BFS</button></li>
+              <li><button class="dropdown-item" id="bfs">BFS</button></li>
+              <li><button class="dropdown-item" id="dfs">DFS</button></li>
+            </ul>
+          </div>
+        </div>
+        <div class="col-md-4 col-lg-3 d-flex mb-3">
+          <div class="form-check form-switch" style="margin: auto;">
+            <input id="toggleDiagonal" class="form-check-input" type="checkbox" checked>
+            <label for="toggleDiagonal">Diagonal Movement</label>
           </div>
         </div>
       </div>
@@ -65,7 +75,7 @@
   </section>
 
   <section>
-    <div class="container-fluid">
+    <div class="container-fluid my-5">
       <div class="overflow-auto text-center">
         <canvas id="grid" width="900" height="600" style="border:1px solid black;"></canvas>
       </div>
@@ -79,6 +89,69 @@
           </div>
       </div>
   </footer>
+
+  <div class="modal fade" id="how-modal" tabindex="-1" aria-labelledby="modal-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Controls</h5>
+          <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <ul>
+            <li>
+              Left Clicking converts the hovered cell into a wall
+            </li>
+            <li>
+              Right Clicking converts the hovered cell into a path
+            </li>
+            <li>
+              Clicking and dragging also converts cells accordingly
+            </li>
+            <li>
+              S = Move the Start Node to the hovered cell
+            </li>
+            <li>
+              E = Move the End Node to the hovered cell
+            </li>
+            <li>
+              SPACE = start pathfinding
+            </li>
+            <li>
+              D = Toggle between adjacent and orthogonal movement
+            </li>
+            <li>
+              R = Clear search results
+            </li>
+            <li>
+              C = Clear the walls and search results
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal fade" id="about-modal" tabindex="-1" aria-labelledby="modal-title" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Algorithms Explained</h5>
+          <button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <p>
+            Two lists, an open list and a closed list, are used to prevent the algorithm from checking a tile more than once and to allow backtracking if needed. Nodes in the closed list represent tiles that have been observed, while nodes in the open list represent tiles that are queued to be observed. Initially, the open list contains just the start node.
+          </p>
+          <p>
+            The algorithm begins by checking if the open list is empty. An empty open list means that all available tiles have been checked and a path from the start tile to the end tile does not exist. Otherwise, set the current node to the next node in the open list and move it to the closed list. If the current node is the end node, a path has been found and the algorithm exits. Each node keeps track of their parent node, allowing the path to be reconstructed. If the current node is not the end node, generate all available neighbors and add them to the open list. This process repeats until all nodes have been checked or a path to the end node has been found.
+          </p>
+          <p>
+            All four of the implemented algorithms function in this way, only differing by how they select the next node from the open list. Breadth-First Search uses the first-in, first-out (FIFO) method, and Depth-First Search uses the last-in, first-out (LIFO) method. Greedy Best-First Search explores the tile that is closest to the end. The estimated path cost from a given node to the end node, also known as the node's h-cost, is calculated for each node when they are created, and the open list is sorted by shortest h-cost. A* utilizes each node's h-cost, but also takes into account each node's g-cost. This is the exact path cost from a given node to the start node. A node's f-cost is the sum of a its g-cost and h-cost, and A* chooses the next node with the lowest f-cost.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <script src="/js/bootstrap.bundle.min.js"></script>
   <script type="module" src="https://pyscript.net/releases/2024.2.1/core.js"></script>

@@ -2,13 +2,14 @@
   "name": "graph-search-visualizer",
   "version": "1.0.0",
   "scripts": {
-    "clean": "rimraf public",
-    "copy:src": "mkdir -p public && copyfiles -f src/index.html src/app.py public && copyfiles -u 1 src/**/* public",
-    "copy:bootstrap:css": "copyfiles -f node_modules/bootstrap/dist/css/bootstrap.min.css public/css",
-    "copy:bootstrap:js": "copyfiles -f node_modules/bootstrap/dist/js/bootstrap.bundle.min.js public/js",
-    "copy:bootstrap": "npm run copy:bootstrap:css && npm run copy:bootstrap:js",
-    "build": "npm run clean && npm run copy:src && npm run copy:bootstrap",
-    "dev": "chokidar \"src/**/*\" -c \"npm run copy:src\""
+  "clean": "rimraf public",
+  "copy:root": "copyfiles -f src/index.html src/*.py public",
+  "copy:rest": "copyfiles -u 1 src/**/* public",
+  "copy:bootstrap:css": "copyfiles -f node_modules/bootstrap/dist/css/bootstrap.min.css public/css",
+  "copy:bootstrap:js": "copyfiles -f node_modules/bootstrap/dist/js/bootstrap.bundle.min.js public/js",
+  "copy:bootstrap": "npm run copy:bootstrap:css && npm run copy:bootstrap:js",
+  "build": "npm run clean && npm run copy:root && npm run copy:rest && npm run copy:bootstrap",
+  "dev": "chokidar \"src/**/*\" -c \"npm run copy:root && npm run copy:rest\""
   },
   "dependencies": {
     "bootstrap": "^5.3.3"

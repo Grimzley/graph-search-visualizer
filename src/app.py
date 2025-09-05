@@ -9,6 +9,8 @@ resetBtn = document.getElementById("reset")
 clearBtn = document.getElementById("clear")
 dropdown = document.getElementById("dropdownMenuButton")
 toggleBtn = document.getElementById("toggleDiagonal")
+algoText = document.getElementById("selectedAlgoText")
+statText = document.getElementById("statText")
 
 GRID_WIDTH = 900
 GRID_HEIGHT = 600
@@ -108,26 +110,20 @@ def disable_context_menu(event):
 
 async def runPathfinding(event=None):
     global ALGORITHM, searching
-    runBtn.disabled = True
-    resetBtn.disabled = True
-    clearBtn.disabled = True
-    dropdown.disabled = True
-    toggleBtn.disabled = True
+    toggleButtons()
     start()
     while searching:
         found = ALGORITHM()
         if found == True:
-            reconstructPath()
+            pathLength = reconstructPath()
             searching = False
         elif found == False:
+            pathLength = "N/A"
             searching = False
         draw_grid()
         await asyncio.sleep(0.01)
-    runBtn.disabled = False
-    resetBtn.disabled = False
-    clearBtn.disabled = False
-    dropdown.disabled = False
-    toggleBtn.disabled = False
+    statText.innerText = f"Observed Cells: {len(closed)}, Queued Cells: {len(open)}, Path Length: {pathLength}"
+    toggleButtons()
 
 ##############################
 #         User Input         #
@@ -223,7 +219,7 @@ def set_algorithm(event, algo, label):
         "dfs": DFS,
     }
     ALGORITHM = ALGORITHMS[algo] 
-    document.getElementById("selectedAlgoText").innerText = label
+    algoText.innerText = label
 
 def updateCell(x, y):
     if 0 <= x < COLS and 0 <= y < ROWS:
@@ -273,6 +269,13 @@ def clear(event=None):
     searching = False
     draw_grid()
 
+def toggleButtons():
+    runBtn.disabled = not runBtn.disabled
+    resetBtn.disabled = not resetBtn.disabled
+    clearBtn.disabled = not clearBtn.disabled
+    dropdown.disabled = not dropdown.disabled
+    toggleBtn.disabled = not toggleBtn.disabled
+
 def inGrid(x, y):
     return (x >= 0 and x < COLS) and (y >= 0 and y < ROWS)
 
@@ -288,17 +291,16 @@ def HCost(node):
         return dy + dx
 
 def reconstructPath():
-    curr = closed.pop()
+    curr = closed[-1]
     parent = curr.parent
+    pathLength = 1
     while parent != None:
         GRID[curr.y][curr.x] = 6
-        for node in closed:
-            if parent == node:
-                curr, parent = node, node.parent
-                break
-    
+        curr, parent = parent, parent.parent
+        pathLength = pathLength + 1
     GRID[START.y][START.x] = 2
     GRID[END.y][END.x] = 3
+    return pathLength
 
 ##############################
 #         Algorithms         #

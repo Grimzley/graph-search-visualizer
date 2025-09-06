@@ -1,6 +1,7 @@
 from js import document
 from pyodide.ffi import create_proxy
 import asyncio
+import random
 
 canvas = document.getElementById("grid")
 ctx = canvas.getContext("2d")
@@ -103,6 +104,9 @@ def main():
     )
     document.getElementById("dfs").addEventListener(
         "click", create_proxy(lambda e: set_algorithm(e, "dfs", "DFS"))
+    )
+    document.getElementById("random").addEventListener(
+        "click", create_proxy(lambda e: set_algorithm(e, "random", "Random Walk"))
     )
     
 def disable_context_menu(event):
@@ -217,6 +221,7 @@ def set_algorithm(event, algo, label):
         "greedy": Greedy,
         "bfs": BFS,
         "dfs": DFS,
+        "random": RandomWalk,
     }
     ALGORITHM = ALGORITHMS[algo] 
     algoText.innerText = label
@@ -250,6 +255,7 @@ def reset(event=None):
     global searching
     open.clear()
     closed.clear()
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
     for x in range(0, COLS):
         for y in range(0, ROWS):
             if GRID[y][x] in [4, 5, 6]:
@@ -261,6 +267,9 @@ def reset(event=None):
 
 def clear(event=None):
     global searching
+    open.clear()
+    closed.clear()
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
     for x in range(0, COLS):
         for y in range(0, ROWS):
             GRID[y][x] = 0
@@ -371,6 +380,20 @@ def AStar():
             else:
                 open.append(neighbor)
                 GRID[neighbor.y][neighbor.x] = 5
+
+def RandomWalk():
+    if not open:
+        return False
+    curr = open.pop(random.randrange(len(open)))
+    closed.append(curr)
+    GRID[curr.y][curr.x] = 4
+    if curr == END:
+        return True
+    neighbors = curr.getNeighbors()
+    for neighbor in neighbors:
+        if isPath(neighbor) and neighbor not in closed and neighbor not in open:
+            open.append(neighbor)
+            GRID[neighbor.y][neighbor.x] = 5
 
 if __name__ == "__main__":
     main()

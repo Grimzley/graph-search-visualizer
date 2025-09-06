@@ -201,6 +201,13 @@ def draw_grid():
         x, y = hover
         ctx.fillStyle = COLORS[7]
         ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+    for node in closed + open:
+        ctx.fillStyle = "black"
+        ctx.font = "12px Arial"
+        ctx.textAlign = "center"
+        ctx.textBaseline = "middle"
+        cost = node.fCost()
+        ctx.fillText(cost if cost > 0 else "", node.x * CELL_SIZE + CELL_SIZE / 2, node.y * CELL_SIZE + CELL_SIZE / 2)
 
 def setStart(x, y):
     if START:

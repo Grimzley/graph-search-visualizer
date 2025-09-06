@@ -1,6 +1,7 @@
 from js import document
 from pyodide.ffi import create_proxy
 import asyncio
+import random
 
 canvas = document.getElementById("grid")
 ctx = canvas.getContext("2d")
@@ -9,6 +10,8 @@ resetBtn = document.getElementById("reset")
 clearBtn = document.getElementById("clear")
 dropdown = document.getElementById("dropdownMenuButton")
 toggleBtn = document.getElementById("toggleDiagonal")
+algoText = document.getElementById("selectedAlgoText")
+statText = document.getElementById("statText")
 
 GRID_WIDTH = 900
 GRID_HEIGHT = 600
@@ -102,32 +105,29 @@ def main():
     document.getElementById("dfs").addEventListener(
         "click", create_proxy(lambda e: set_algorithm(e, "dfs", "DFS"))
     )
+    document.getElementById("random").addEventListener(
+        "click", create_proxy(lambda e: set_algorithm(e, "random", "Random Walk"))
+    )
     
 def disable_context_menu(event):
     event.preventDefault()
 
 async def runPathfinding(event=None):
     global ALGORITHM, searching
-    runBtn.disabled = True
-    resetBtn.disabled = True
-    clearBtn.disabled = True
-    dropdown.disabled = True
-    toggleBtn.disabled = True
+    toggleButtons()
     start()
     while searching:
         found = ALGORITHM()
         if found == True:
-            reconstructPath()
+            pathLength = reconstructPath()
             searching = False
         elif found == False:
+            pathLength = "N/A"
             searching = False
         draw_grid()
         await asyncio.sleep(0.01)
-    runBtn.disabled = False
-    resetBtn.disabled = False
-    clearBtn.disabled = False
-    dropdown.disabled = False
-    toggleBtn.disabled = False
+    statText.innerText = f"Observed Cells: {len(closed)}, Queued Cells: {len(open)}, Path Length: {pathLength}"
+    toggleButtons()
 
 ##############################
 #         User Input         #
@@ -201,6 +201,13 @@ def draw_grid():
         x, y = hover
         ctx.fillStyle = COLORS[7]
         ctx.fillRect(x * CELL_SIZE, y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+    for node in closed + open:
+        ctx.fillStyle = "black"
+        ctx.font = "12px Arial"
+        ctx.textAlign = "center"
+        ctx.textBaseline = "middle"
+        cost = node.fCost()
+        ctx.fillText(cost if cost > 0 else "", node.x * CELL_SIZE + CELL_SIZE / 2, node.y * CELL_SIZE + CELL_SIZE / 2)
 
 def setStart(x, y):
     if START:
@@ -221,9 +228,10 @@ def set_algorithm(event, algo, label):
         "greedy": Greedy,
         "bfs": BFS,
         "dfs": DFS,
+        "random": RandomWalk,
     }
     ALGORITHM = ALGORITHMS[algo] 
-    document.getElementById("selectedAlgoText").innerText = label
+    algoText.innerText = label
 
 def updateCell(x, y):
     if 0 <= x < COLS and 0 <= y < ROWS:
@@ -254,6 +262,7 @@ def reset(event=None):
     global searching
     open.clear()
     closed.clear()
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
     for x in range(0, COLS):
         for y in range(0, ROWS):
             if GRID[y][x] in [4, 5, 6]:
@@ -265,6 +274,9 @@ def reset(event=None):
 
 def clear(event=None):
     global searching
+    open.clear()
+    closed.clear()
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
     for x in range(0, COLS):
         for y in range(0, ROWS):
             GRID[y][x] = 0
@@ -272,6 +284,13 @@ def clear(event=None):
     GRID[END.y][END.x] = 3
     searching = False
     draw_grid()
+
+def toggleButtons():
+    runBtn.disabled = not runBtn.disabled
+    resetBtn.disabled = not resetBtn.disabled
+    clearBtn.disabled = not clearBtn.disabled
+    dropdown.disabled = not dropdown.disabled
+    toggleBtn.disabled = not toggleBtn.disabled
 
 def inGrid(x, y):
     return (x >= 0 and x < COLS) and (y >= 0 and y < ROWS)
@@ -288,17 +307,16 @@ def HCost(node):
         return dy + dx
 
 def reconstructPath():
-    curr = closed.pop()
+    curr = closed[-1]
     parent = curr.parent
+    pathLength = 1
     while parent != None:
         GRID[curr.y][curr.x] = 6
-        for node in closed:
-            if parent == node:
-                curr, parent = node, node.parent
-                break
-    
+        curr, parent = parent, parent.parent
+        pathLength = pathLength + 1
     GRID[START.y][START.x] = 2
     GRID[END.y][END.x] = 3
+    return pathLength
 
 ##############################
 #         Algorithms         #
@@ -369,6 +387,20 @@ def AStar():
             else:
                 open.append(neighbor)
                 GRID[neighbor.y][neighbor.x] = 5
+
+def RandomWalk():
+    if not open:
+        return False
+    curr = open.pop(random.randrange(len(open)))
+    closed.append(curr)
+    GRID[curr.y][curr.x] = 4
+    if curr == END:
+        return True
+    neighbors = curr.getNeighbors()
+    for neighbor in neighbors:
+        if isPath(neighbor) and neighbor not in closed and neighbor not in open:
+            open.append(neighbor)
+            GRID[neighbor.y][neighbor.x] = 5
 
 if __name__ == "__main__":
     main()

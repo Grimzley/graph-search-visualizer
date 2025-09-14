@@ -13,9 +13,9 @@ toggleBtn = document.getElementById("toggleDiagonal")
 algoText = document.getElementById("selectedAlgoText")
 statText = document.getElementById("statText")
 
-GRID_WIDTH = 900
-GRID_HEIGHT = 600
-CELL_SIZE = 30
+GRID_WIDTH = 750
+GRID_HEIGHT = 500
+CELL_SIZE = 25
 ROWS = GRID_HEIGHT // CELL_SIZE
 COLS = GRID_WIDTH // CELL_SIZE
 GRID = [[0 for x in range(COLS)] for y in range(ROWS)]
